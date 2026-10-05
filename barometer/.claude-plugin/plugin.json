@@ -2,7 +2,7 @@
   "name": "barometer",
   "version": "0.1.0",
   "description": "Context and plan-limit gauges in the band above the prompt",
-  "author": { "name": "Rohan Bansal" },
+  "author": { "name": "Alchez", "url": "https://github.com/Alchez" },
   "homepage": "https://github.com/Alchez/claude-mods",
   "repository": "https://github.com/Alchez/claude-mods",
   "license": "MIT",

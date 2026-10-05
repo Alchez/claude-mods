@@ -1,7 +1,7 @@
 {
   "name": "alchez",
-  "description": "Claude Code mods by Rohan Bansal",
-  "owner": { "name": "Rohan Bansal", "url": "https://github.com/Alchez" },
+  "description": "Claude Code mods",
+  "owner": { "name": "Alchez", "url": "https://github.com/Alchez" },
   "plugins": [
     {
       "name": "barometer",
