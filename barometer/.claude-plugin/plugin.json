@@ -1,0 +1,34 @@
+{
+  "name": "barometer",
+  "version": "0.1.0",
+  "description": "Context and plan-limit gauges in the band above the prompt",
+  "author": { "name": "Rohan Bansal" },
+  "homepage": "https://github.com/Alchez/claude-mods",
+  "repository": "https://github.com/Alchez/claude-mods",
+  "license": "MIT",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "redLine1M": {
+      "type": "number",
+      "title": "Context red line, 1M windows",
+      "description": "Context % where the bar turns red and the Compact button appears; 0 turns it off",
+      "default": 60,
+      "min": 0,
+      "max": 95
+    },
+    "redLine200k": {
+      "type": "number",
+      "title": "Context red line, 200k windows",
+      "description": "Context % where the bar turns red and the Compact button appears; 0 turns it off",
+      "default": 80,
+      "min": 0,
+      "max": 95
+    },
+    "alwaysShowCompact": {
+      "type": "boolean",
+      "title": "Always show the Compact button",
+      "description": "Show it whenever no reply is running, not only once context reaches the red line",
+      "default": false
+    }
+  }
+}

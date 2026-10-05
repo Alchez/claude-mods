@@ -1,0 +1,12 @@
+{
+  "name": "alchez",
+  "description": "Claude Code mods by Rohan Bansal",
+  "owner": { "name": "Rohan Bansal", "url": "https://github.com/Alchez" },
+  "plugins": [
+    {
+      "name": "barometer",
+      "source": "./barometer",
+      "description": "Context and plan-limit gauges in the band above the prompt"
+    }
+  ]
+}
