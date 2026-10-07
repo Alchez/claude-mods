@@ -1,6 +1,6 @@
 {
   "name": "barometer",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Context and plan-limit gauges in the band above the prompt",
   "author": { "name": "Alchez", "url": "https://github.com/Alchez" },
   "homepage": "https://github.com/Alchez/claude-mods",
