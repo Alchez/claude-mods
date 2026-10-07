@@ -23,6 +23,8 @@ const ACCOUNT = '#87d7ff'
 const ELAPSED = '#bcbcbc'
 
 const FILLED = '━'
+// Heavy left half, light right half: a fill that ends mid-cell
+const HALF_FILLED = '╾'
 const EMPTY = '─'
 const MARK_ON_FILLED = '╋'
 const MARK_ON_EMPTY = '╂'
@@ -139,14 +141,16 @@ function pace(limit: SessionRateLimit, lengthMs: number, now: number): Pace {
 }
 
 function meterCells(columns: number, percent: number | undefined, color: string | undefined, marker?: Marker): Cell[] {
-  const filled = percent === undefined ? 0 : Math.round((clamp(percent, 0, 100) / 100) * columns)
+  const filledHalves = percent === undefined ? 0 : Math.round((clamp(percent, 0, 100) / 100) * columns * 2)
   const markerAt = marker === undefined ? -1 : Math.min(columns - 1, Math.floor((marker.atPercent / 100) * columns))
   return Array.from({ length: columns }, (_, index): Cell => {
-    const isFilled = index < filled
+    const halvesHere = clamp(filledHalves - index * 2, 0, 2)
     if (marker !== undefined && index === markerAt) {
-      return { glyph: isFilled ? MARK_ON_FILLED : MARK_ON_EMPTY, color: marker.color }
+      return { glyph: halvesHere > 0 ? MARK_ON_FILLED : MARK_ON_EMPTY, color: marker.color }
     }
-    return isFilled ? { glyph: FILLED, ...colorOf(color) } : { glyph: EMPTY, dimColor: true }
+    if (halvesHere === 2) return { glyph: FILLED, ...colorOf(color) }
+    if (halvesHere === 1) return { glyph: HALF_FILLED, ...colorOf(color) }
+    return { glyph: EMPTY, dimColor: true }
   })
 }
 
@@ -399,7 +403,8 @@ export const register: Register = (on, options) => {
     const planRows = plans.map(plan => {
       const used = Math.round(plan.limit.percentUsed)
       const color = planColor(used)
-      const marker = plan.pace.elapsedPercent === undefined ? undefined : { atPercent: plan.pace.elapsedPercent, color: ELAPSED }
+      const elapsed = plan.pace.elapsedPercent
+      const marker = elapsed === undefined ? undefined : { atPercent: elapsed, color: plan.limit.percentUsed > elapsed ? ORANGE : ELAPSED }
       const detail: RenderElement[] = []
       if (plan.pace.resetsInMs !== undefined) {
         detail.push(
@@ -412,7 +417,7 @@ export const register: Register = (on, options) => {
         detail.push(<Text dimColor>·</Text>)
         detail.push(<Text color={ORANGE} wrap="truncate-end">{`out in ~${duration(plan.pace.runsOutInMs)} at this pace`}</Text>)
       }
-      return gauge(plan.label, meterCells(barColumns, used, color, marker), <Text color={color}>{`${used}%`}</Text>, detail)
+      return gauge(plan.label, meterCells(barColumns, plan.limit.percentUsed, color, marker), <Text color={color}>{`${used}%`}</Text>, detail)
     })
 
     const gauges = (

@@ -9,13 +9,13 @@
 ```
 ╭───────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ Context ━━━━━━━━━━━━╋───────  63%  630k/1M [ Compact ]                       you@example.com · Claude Max │
-│ 5h      ━━━━━━━━─╂──────────  38%  resets in 2h35m                                               Opus 5.5 │
-│ Week    ━━━━━────╂──────────  27%  resets in 3d14h                             xhigh effort · thinking on │
+│ 5h      ━━━━━━━╾─╂──────────  38%  resets in 2h35m                                               Opus 5.5 │
+│ Week    ━━━━━╾───╂──────────  27%  resets in 3d14h                             xhigh effort · thinking on │
 ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 - **Context** fills green to red; past the red line, a Compact button appears between replies.
-- **5h** and **Week** show plan usage; the grey notch is how far through the window you are.
+- **5h** and **Week** show plan usage; the notch is how far through the window you are, and turns orange once usage passes it.
 
 ### Install
 

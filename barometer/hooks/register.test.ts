@@ -13,6 +13,7 @@ const YELLOW = '#ffff00'
 const ORANGE = '#ff8700'
 const RED = '#ff0000'
 const ACCOUNT = '#87d7ff'
+const ELAPSED = '#bcbcbc'
 
 const SURFACES = ['terminal', 'desktop'] as const
 
@@ -85,7 +86,7 @@ async function textColor($: Engine, surface: (typeof SURFACES)[number], shown: s
 
 function barAfter(texts: readonly string[], label: string): string {
   const afterLabel = texts.slice(texts.indexOf(label) + 1)
-  const barEnd = afterLabel.findIndex(text => !/^[━─╂╋]+$/.test(text))
+  const barEnd = afterLabel.findIndex(text => !/^[━╾─╂╋]+$/.test(text))
   return afterLabel.slice(0, barEnd === -1 ? undefined : barEnd).join('')
 }
 
@@ -175,9 +176,48 @@ describe('the gauges', () => {
     const texts = (await ui.findAll({ type: 'Text' })).map(found => found.text)
     await ui.unmount()
     const context = barAfter(texts, 'Context')
-    expect(context, '31% filled, red line at 80% in the empty part').toMatch(/^━+─+╂─+$/)
-    expect(context.indexOf('─')).toBe(Math.round(0.31 * context.length))
-    expect(barAfter(texts, '5h'), '60% used with 40% of the window gone: the clock mark inside the fill').toMatch(/^━+╋━+─+$/)
+    expect(context, '31% filled, red line at 80% in the empty part').toMatch(/^━+╾?─+╂─+$/)
+    expect(context.indexOf('─')).toBe(Math.ceil(Math.round(0.31 * context.length * 2) / 2))
+    expect(barAfter(texts, '5h'), '60% used with 40% of the window gone: the clock mark inside the fill').toMatch(/^━+╋━+╾?─+$/)
+  })
+
+  test('end a fill on a half cell when the reading falls between cells', async ($, on) => {
+    let usage: SessionUsage = TYPICAL
+    world(on, () => usage)
+    let halfCells = 0
+    for (const percent of [31, 32, 33, 34, 35, 47, 48]) {
+      usage = { ...TYPICAL, context: { tokens: percent * 2_000, window: 200_000, percent } }
+      const ui = await $.ui.mount({ ...band(120), surface: 'terminal' })
+      const texts = (await ui.findAll({ type: 'Text' })).map(found => found.text)
+      await ui.unmount()
+      const bar = barAfter(texts, 'Context')
+      const halves = Math.round((percent / 100) * bar.length * 2)
+      const fill = '━'.repeat(Math.floor(halves / 2)) + (halves % 2 === 1 ? '╾' : '')
+      if (halves % 2 === 1) halfCells += 1
+      expect(bar.slice(0, fill.length + 1), `${percent}% of a ${bar.length}-cell bar`).toBe(`${fill}─`)
+    }
+    expect(halfCells, 'some of these readings end mid-cell').toBeGreaterThan(0)
+  })
+
+  test('turn the clock mark orange once usage has passed it', async ($, on) => {
+    let usage: SessionUsage = TYPICAL
+    world(on, () => usage)
+    for (const [used, color, what] of [
+      [60, ORANGE, '60% used with 40% of the window gone'],
+      [41, ORANGE, '41% used with 40% gone'],
+      [39, ELAPSED, '39% used with 40% gone'],
+      [20, ELAPSED, '20% used with 40% gone'],
+    ] as const) {
+      usage = { ...TYPICAL, rateLimits: [fiveHour(used, 3 * HOUR), sevenDay(21, 4 * DAY + 3 * HOUR)] }
+      for (const surface of SURFACES) {
+        const ui = await $.ui.mount({ ...band(120), surface })
+        const found = await ui.findAll({ type: 'Text' })
+        await ui.unmount()
+        const afterLabel = found.slice(found.findIndex(text => text.text === '5h') + 1)
+        const mark = afterLabel.find(text => /^[╂╋]$/.test(text.text))
+        expect(mark?.props.color, `${what} on ${surface}`).toBe(color)
+      }
+    }
   })
 
   test('keep the label, bar and percent whole when the text beside them is too long', async ($, on) => {
@@ -188,7 +228,7 @@ describe('the gauges', () => {
       const ui = await $.ui.mount({ ...band(120), surface })
       const boxes = await ui.findAll({ type: 'Box' })
       await ui.unmount()
-      const bars = boxes.filter(box => /^[━─╂╋]+$/.test(box.text))
+      const bars = boxes.filter(box => /^[━╾─╂╋]+$/.test(box.text))
       const fixedColumns = boxes.filter(box => box.props.width === 8 || box.props.width === 5)
       const resetTimes = boxes.filter(box => /^resets in \S+$/.test(box.text) && box.props.flexGrow === undefined)
       expect(bars, `${surface}: one bar per row`).toHaveLength(3)
@@ -376,8 +416,8 @@ describe("each person's red line", () => {
         const ui = await $.ui.mount({ ...band(120), surface })
         const found = await ui.findAll({ type: 'Text' })
         const afterLabel = found.slice(found.findIndex(text => text.text === 'Context') + 1)
-        const bar = afterLabel.slice(0, afterLabel.findIndex(text => !/^[━─╂╋]+$/.test(text.text)))
-        expect(bar.map(text => text.text).join(''), `${where}: no red mark`).toMatch(/^━+─*$/)
+        const bar = afterLabel.slice(0, afterLabel.findIndex(text => !/^[━╾─╂╋]+$/.test(text.text)))
+        expect(bar.map(text => text.text).join(''), `${where}: no red mark`).toMatch(/^━+╾?─*$/)
         expect(bar.filter(text => text.text.startsWith('━')).map(text => text.props.color), `${where}: plain fill`).toEqual([undefined])
         expect(found.find(text => text.text === `${percent}%`)?.props.color, `${where}: plain percent`).toBeUndefined()
         expect(await ui.find({ type: 'Button', key: 'compact' }), `${where}: no Compact`).toBeUndefined()
