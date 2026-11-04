@@ -30,6 +30,7 @@ const MARK_ON_FILLED = '╋'
 const MARK_ON_EMPTY = '╂'
 
 const REFRESH_MS = 5_000
+const ACCOUNT_REFRESH_MS = 60_000
 const LABEL_COLUMNS = 8
 const PERCENT_COLUMNS = 5
 const COMPACT_BELOW_COLUMNS = 60
@@ -230,6 +231,8 @@ export const register: Register = (on, options) => {
 
   on('session.start', async ($, e, next) => {
     $.clock.after(0, () => void refreshAccount($))
+    // A mod gets no event for /login, here or in another window on the same profile, so the account is re-read on a timer
+    $.clock.every(ACCOUNT_REFRESH_MS, () => void refreshAccount($))
     $.clock.every(REFRESH_MS, async () => {
       await rememberLimits($, (await $.session.usage()).rateLimits)
       $.ui.invalidate('ui.render')
