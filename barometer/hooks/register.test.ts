@@ -54,7 +54,7 @@ function world(
   on: On,
   usage: SessionUsage | (() => SessionUsage),
   drawBelow?: (text: (children: string) => RenderElement) => RenderElement,
-  authStatus = AUTH_STATUS,
+  authStatus: string | (() => string) = AUTH_STATUS,
 ) {
   const clock = mock.clock(on, { now: NOW })
   on('session.usage', () => ({ value: typeof usage === 'function' ? usage() : usage }))
@@ -68,7 +68,7 @@ function world(
   on('process.run', () => ({
     value: {
       exitCode: 0,
-      stdout: authStatus,
+      stdout: typeof authStatus === 'function' ? authStatus() : authStatus,
       stderr: '',
       isStdoutTruncated: false,
       isStderrTruncated: false,
@@ -328,6 +328,26 @@ describe('the gauges', () => {
     await ui.unmount()
     expect(texts).toContain('someone@example.com')
     expect(texts.filter(text => text.startsWith(' · '))).toHaveLength(0)
+  })
+
+  test('pick up a different login within a minute', async ($, on) => {
+    let authStatus = AUTH_STATUS
+    const clock = world(on, TYPICAL, undefined, () => authStatus)
+    await $.session.start({ cwd: '/tmp', surface: 'terminal', isInteractive: true })
+    await clock.settle()
+    const shown = async () => {
+      const ui = await $.ui.mount({ ...band(120), surface: 'terminal' })
+      const texts = (await ui.findAll({ type: 'Text' })).map(found => found.text)
+      await ui.unmount()
+      return texts
+    }
+    expect(await shown(), 'the login the session started with').toContain('someone@example.com')
+    authStatus = 'Login method: Claude Team account\nOrganization: Other\nEmail: someone.else@example.org\n'
+    await clock.advance(60_000)
+    const after = await shown()
+    expect(after, 'the new login a minute later').toContain('someone.else@example.org')
+    expect(after).toContain(' · Claude Team')
+    expect(after).not.toContain('someone@example.com')
   })
 
   test('refresh the figures every five seconds', async ($, on) => {
